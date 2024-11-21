@@ -150,7 +150,7 @@ class VideoAnnotationTool(QMainWindow):
                 current_utterance["Role"] = new_role.strip()
 
             # Edit Utterance
-            new_utterance, ok_utterance = QInputDialog.getText(
+            new_utterance, ok_utterance = QInputDialog.getMultiLineText(
                 self, "Edit Utterance", "Enter new utterance:", text=current_utterance.get("Utterance", "")
             )
             if ok_utterance and new_utterance.strip():
