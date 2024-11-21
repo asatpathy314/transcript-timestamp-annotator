@@ -31,11 +31,11 @@ def download_files(video_paths, remote_host, username, password, local_dir):
             local_transcript_path = os.path.join(local_dir, "AnnotationFiles", os.path.basename(transcript_path.strip()))
 
             # Download video file
-            print(f"Downloading video: {video_path}")
+            print(f"Downloading video: {video_path.strip()}\n")
             sftp.get(video_path.strip(), local_video_path)
 
             # Download transcript file
-            print(f"Downloading transcript: {transcript_path}")
+            print(f"Downloading transcript: {transcript_path.strip()}\n")
             sftp.get(transcript_path.strip(), local_transcript_path)
         except Exception as e:
             print(f"Could not load video path {video_path} with transcript path {transcript_path}")

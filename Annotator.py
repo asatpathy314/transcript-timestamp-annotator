@@ -95,10 +95,33 @@ class VideoAnnotationTool(QMainWindow):
             label_text = f"Role: {role}\nUtterance: {text}\nStart: {start_t}, End: {end_t}"
             self.annotation_label.setText(label_text)
 
+    def edit_current_utterance(self):
+        """Edit the current utterance's Role and Utterance fields."""
+        if 0 <= self.current_index < len(self.data):
+            current_utterance = self.data[self.current_index]
+
+            # Edit Role
+            new_role, ok_role = QInputDialog.getText(
+                self, "Edit Role", "Enter new role:", text=current_utterance.get("Role", "")
+            )
+            if ok_role and new_role.strip():
+                current_utterance["Role"] = new_role.strip()
+
+            # Edit Utterance
+            new_utterance, ok_utterance = QInputDialog.getText(
+                self, "Edit Utterance", "Enter new utterance:", text=current_utterance.get("Utterance", "")
+            )
+            if ok_utterance and new_utterance.strip():
+                current_utterance["Utterance"] = new_utterance.strip()
+
+            print(f"Updated annotation: {current_utterance}")
+            self.update_annotation_label()
+
     def save_json_and_quit(self):
         """Save the updated JSON data and quit the application."""
         with open(self.json_path, 'w') as f:
             json.dump(self.data, f, indent=4)
+        sys.exit(0)
         
     def is_task_complete(self):
         """Check if all utterances have valid start and end times."""
