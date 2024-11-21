@@ -6,7 +6,6 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeyEvent
 import json
 import sys
-import os
 import vlc
 
 class VideoAnnotationTool(QMainWindow):
@@ -249,7 +248,7 @@ class VideoAnnotationTool(QMainWindow):
         if duration > 0:
             self.positionSlider.setRange(0, 1000)  # Slider range normalized to [0, 1000]
 
-# Function to add missing timestamps to utterances
+# Helper function to add missing timestamps to utterances
 def add_timestamps(data):
     """Ensure all utterances have 'start_t' and 'end_t' fields."""
     for utterance in data:
@@ -259,7 +258,7 @@ def add_timestamps(data):
             utterance['end_t'] = ''  # Initialize if not present
     return data
 
-# Function to fix the main loop for processing tasks
+# Function to run the main loop for processing tasks
 def main(tasks_path):
     """Process tasks from tasks.json and handle each task."""
     # Load tasks from the JSON file
