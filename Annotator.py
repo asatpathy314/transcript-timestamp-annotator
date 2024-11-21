@@ -34,6 +34,14 @@ class VideoAnnotationTool(QMainWindow):
         elif sys.platform == "darwin":  # macOS
             self.media_player.set_nsobject(int(self.video_widget.winId()))
 
+        # Connect VLC events to your methods
+        self.media_player.event_manager().event_attach(
+            vlc.EventType.MediaPlayerTimeChanged, self.on_position_changed
+        )
+        self.media_player.event_manager().event_attach(
+            vlc.EventType.MediaPlayerLengthChanged, self.on_duration_changed
+        )
+
         # Controls
         self.playButton = QPushButton("Play/Pause")
         self.playButton.clicked.connect(self.toggle_playback)
@@ -69,6 +77,14 @@ class VideoAnnotationTool(QMainWindow):
         self.current_index = 0
         if len(self.data) > 0:
             self.update_annotation_label()
+    
+    def on_position_changed(self, event):
+        """Callback for VLC MediaPlayerTimeChanged event."""
+        self.position_changed()
+
+    def on_duration_changed(self, event):
+        """Callback for VLC MediaPlayerLengthChanged event."""
+        self.duration_changed()
 
     def toggle_playback(self):
         """Toggle play/pause for the VLC media player."""
@@ -94,6 +110,25 @@ class VideoAnnotationTool(QMainWindow):
             end_t = utterance.get("end_t", "N/A")
             label_text = f"Role: {role}\nUtterance: {text}\nStart: {start_t}, End: {end_t}"
             self.annotation_label.setText(label_text)
+    def delete_current_utterance(self):
+        """Delete the current utterance and update the annotations."""
+        if 0 <= self.current_index < len(self.data):
+            # Remove the current utterance
+            deleted_utterance = self.data.pop(self.current_index)
+            print(f"Deleted utterance: {deleted_utterance}")
+
+            # Adjust the index to point to a valid utterance
+            if self.current_index >= len(self.data):
+                self.current_index = max(0, len(self.data) - 1)  # Move to the last utterance if index is out of bounds
+
+            # Update annotation label or show a message if no utterances remain
+            if len(self.data) > 0:
+                self.update_annotation_label()
+            else:
+                print("No more utterances.")
+                self.annotation_label.setText("No more utterances.")
+        else:
+            print("No utterance to delete.")
 
     def edit_current_utterance(self):
         """Edit the current utterance's Role and Utterance fields."""
@@ -186,7 +221,7 @@ class VideoAnnotationTool(QMainWindow):
                     print("No more utterances.")
                     self.annotation_label.setText("No more utterances.")
 
-        elif event.key() == Qt.Key_C:  # Edit current utterance
+        elif event.key() == Qt.Key_C:  # Change current utterance
             self.edit_current_utterance()
 
         elif event.key() == Qt.Key_A:  # Add a new utterance
@@ -199,7 +234,12 @@ class VideoAnnotationTool(QMainWindow):
 
             self.data.insert(self.current_index + 1, new_utterance)
             print("New utterance added.")
+            self.current_index += 1
+            print(f"Moved to next utterance (index: {self.current_index})")
             self.update_annotation_label()
+
+        elif event.key() == Qt.Key_D:
+            self.delete_current_utterance()
 
         elif event.key() == Qt.Key_Up:  # Go to the previous utterance
             if self.current_index > 0:
