@@ -46,8 +46,15 @@ class VideoAnnotationTool(QMainWindow):
         self.playButton = QPushButton("Play/Pause")
         self.playButton.clicked.connect(self.toggle_playback)
 
-        self.label = QLabel("Press space to play/pause. Use 'b' to go back 5s and 'f' to go forward 5s. Press 's' to set a start time, press 'e' to set an end time, and press 'c' to edit the current utterance. Press 'a' to create a new utterance. Use the up and down arrow keys to cycle through utterances.")
-        self.annotation_label = QLabel("")
+        self.label = QLabel(
+            "Press space to play/pause. Use 'b' to go back 5s and 'f' to go forward 5s. "
+            "Press 's' to set a start time, press 'e' to set an end time, and press 'c' to edit the current utterance. "
+            "Press 'a' to create a new utterance. Use the up and down arrow keys to cycle through utterances."
+        )
+        self.label.setWordWrap(True)  # Enable word wrapping for instructions
+
+        self.annotation_label = QLabel("")  # Annotation label
+        self.annotation_label.setWordWrap(True)
 
         self.positionSlider = QSlider(Qt.Horizontal)
         self.positionSlider.setRange(0, 1000)  # Placeholder range; will be updated dynamically
@@ -108,7 +115,7 @@ class VideoAnnotationTool(QMainWindow):
             text = utterance.get("Utterance", "")
             start_t = utterance.get("start_t", "N/A")
             end_t = utterance.get("end_t", "N/A")
-            label_text = f"Role: {role}\nUtterance: {text}\nStart: {start_t}, End: {end_t}"
+            label_text = f"Role: {role}\nUtterance: {text}\nStart: {start_t}\nEnd: {end_t}"
             self.annotation_label.setText(label_text)
     def delete_current_utterance(self):
         """Delete the current utterance and update the annotations."""
