@@ -2,6 +2,9 @@
 
 This project is a video annotation tool that allows users to annotate a transcript for a video with timestamps.. The tool uses VLC for video playback and PyQt5 for the graphical user interface.
 
+## Downloading Files from a Remote Server
+Create a file called `files.txt` that contains a new-line separated list of file paths. Modify any logic in `fetch_data.py` in order to match your directory specifications.
+
 ## Features
 
 - Play/pause video playback
