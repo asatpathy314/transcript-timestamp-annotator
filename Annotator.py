@@ -1,16 +1,39 @@
 from PyQt5.QtWidgets import (
     QMainWindow, QVBoxLayout, QWidget, QPushButton, QLabel, QSlider,
-    QApplication, QInputDialog
+    QApplication, QInputDialog, QDialog, QTextEdit,
 )
-from PyQt5.QtCore import Qt
+
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QKeyEvent
 import json
 import sys
 import vlc
 
+class MultiLineTextDialog(QDialog):
+    def __init__(self, parent=None, title="Edit Text", label="Enter text:", default_text=""):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+
+        # Layout for the dialog
+        layout = QVBoxLayout(self)
+        self.text_edit = QTextEdit(self)
+        self.text_edit.setPlainText(default_text)
+        layout.addWidget(self.text_edit)
+
+        self.ok_button = QPushButton("OK", self)
+        self.ok_button.clicked.connect(self.accept)
+        self.cancel_button = QPushButton("Cancel", self)
+        self.cancel_button.clicked.connect(self.reject)
+        layout.addWidget(self.ok_button)
+        layout.addWidget(self.cancel_button)
+
+    def get_text(self):
+        return self.text_edit.toPlainText()
+
 class VideoAnnotationTool(QMainWindow):
     def __init__(self, video_path, json_path, tasks_path):
         super().__init__()
+
         self.setWindowTitle("Video Annotation Tool")
         self.setGeometry(100, 100, 800, 600)
 
@@ -23,8 +46,13 @@ class VideoAnnotationTool(QMainWindow):
         # Video Widget Setup
         video_widget = QWidget(self)
         self.video_widget = video_widget  # Store reference for resizing later
+
+        # Create a layout for the main widget
         layout = QVBoxLayout()
-        layout.addWidget(video_widget)
+
+        layout.addWidget(video_widget, stretch=5)
+        self.time_label = QLabel("Current Time: 00:00:00")
+        layout.addWidget(self.time_label)
 
         # Set VLC's video output to the widget's window handle
         if sys.platform.startswith("linux"):  # Linux
@@ -42,6 +70,10 @@ class VideoAnnotationTool(QMainWindow):
             vlc.EventType.MediaPlayerLengthChanged, self.on_duration_changed
         )
 
+        self.media_player.event_manager().event_attach(
+            vlc.EventType.MediaPlayerTimeChanged, self.update_time
+        )
+        
         # Controls
         self.playButton = QPushButton("Play/Pause")
         self.playButton.clicked.connect(self.toggle_playback)
@@ -85,6 +117,16 @@ class VideoAnnotationTool(QMainWindow):
         if len(self.data) > 0:
             self.update_annotation_label()
     
+    def update_time(self, event):
+        try:
+            # Get current time and format it
+            current_time_ms = self.media_player.get_time()
+            formatted_time = self.format_time(current_time_ms)
+            # Update the time label
+            self.time_label.setText(f"Current Time: {formatted_time}")
+        except Exception as e:
+            print(f"Error in update_time: {e}")
+
     def on_position_changed(self, event):
         """Callback for VLC MediaPlayerTimeChanged event."""
         self.position_changed()
@@ -149,12 +191,18 @@ class VideoAnnotationTool(QMainWindow):
             if ok_role and new_role.strip():
                 current_utterance["Role"] = new_role.strip()
 
-            # Edit Utterance
-            new_utterance, ok_utterance = QInputDialog.getMultiLineText(
-                self, "Edit Utterance", "Enter new utterance:", text=current_utterance.get("Utterance", "")
+            # Edit Utterance using the custom dialog
+            dialog = MultiLineTextDialog(
+                parent=self,
+                title="Edit Utterance",
+                label="Enter new utterance:",
+                default_text=current_utterance.get("Utterance", "")
             )
-            if ok_utterance and new_utterance.strip():
-                current_utterance["Utterance"] = new_utterance.strip()
+            
+            if dialog.exec_() == QDialog.Accepted:
+                new_utterance = dialog.get_text()
+                if new_utterance.strip():
+                    current_utterance["Utterance"] = new_utterance.strip()
 
             print(f"Updated annotation: {current_utterance}")
             self.update_annotation_label()
@@ -202,11 +250,13 @@ class VideoAnnotationTool(QMainWindow):
         elif event.key() == Qt.Key_B:  # Go back 5 seconds
             current_time = self.media_player.get_time()
             self.media_player.set_time(max(0, current_time - 5000))
+            self.update_time(None)
 
         elif event.key() == Qt.Key_F:  # Go forward 5 seconds
             current_time = self.media_player.get_time()
             duration = self.media_player.get_length()
             self.media_player.set_time(min(duration, current_time + 5000))
+            self.update_time(None)
 
         elif event.key() == Qt.Key_S:  # Set start time
             if 0 <= self.current_index < len(self.data):
@@ -267,11 +317,13 @@ class VideoAnnotationTool(QMainWindow):
         elif event.key() == Qt.Key_Left:  # Go backward 0.5 seconds
             current_time = self.media_player.get_time()
             self.media_player.set_time(max(0, current_time - 500))
+            self.update_time(None)
 
         elif event.key() == Qt.Key_Right:  # Go forward 0.5 seconds
             current_time = self.media_player.get_time()
             duration = self.media_player.get_length()
             self.media_player.set_time(min(duration, current_time + 500))
+            self.update_time(None)
 
         elif event.key() == Qt.Key_Q:  # Quit and save
             self.save_json_and_quit()
